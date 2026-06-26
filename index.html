@@ -8,11 +8,11 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg: #f8f8f6; --surface: #ffffff; --border: #e4e2dc; --border-strong: #c8c5bc;
-  --text: #1a1a18; --text-muted: #6b6b67; --text-hint: #9b9b96;
-  --accent: #1a1a2e;
+  --text: #1a1a18; --text-muted: #6b6b67; --text-hint: #9b9b96; --accent: #1a1a2e;
   --danger-bg: #fef2f2; --danger-border: #fca5a5; --danger-text: #991b1b;
   --warning-bg: #fffbeb; --warning-border: #fcd34d; --warning-text: #92400e;
   --success-bg: #f0fdf4; --success-border: #86efac; --success-text: #166534;
+  --info-bg: #eff6ff; --info-border: #93c5fd; --info-text: #1e40af;
   --radius: 10px; --radius-sm: 6px;
 }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem; }
@@ -23,12 +23,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .subtitle { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; display: flex; flex-direction: column; gap: 12px; }
 .label { font-size: 11px; font-weight: 600; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.07em; }
-.meta-row { display: flex; gap: 8px; }
-.meta-row input, select { border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; color: var(--text); background: var(--bg); font-family: inherit; }
-.meta-row input { flex: 1; }
-.meta-row input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-select { min-width: 140px; cursor: pointer; }
-textarea { width: 100%; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; color: var(--text); background: var(--bg); resize: vertical; min-height: 110px; font-family: inherit; line-height: 1.6; }
+textarea { width: 100%; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; color: var(--text); background: var(--bg); resize: vertical; min-height: 120px; font-family: inherit; line-height: 1.6; }
 textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .btn-primary { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font-family: inherit; transition: opacity 0.15s; }
 .btn-primary:hover { opacity: 0.85; }
@@ -41,24 +36,29 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .banner-danger { background: var(--danger-bg); border: 0.5px solid var(--danger-border); }
 .banner-warning { background: var(--warning-bg); border: 0.5px solid var(--warning-border); }
 .banner-success { background: var(--success-bg); border: 0.5px solid var(--success-border); }
+.banner-info { background: var(--info-bg); border: 0.5px solid var(--info-border); }
 .banner-icon { font-size: 18px; flex-shrink: 0; }
 .banner-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .banner-title { font-size: 13px; font-weight: 700; }
 .banner-title.danger { color: var(--danger-text); }
 .banner-title.warning { color: var(--warning-text); }
 .banner-title.success { color: var(--success-text); }
-.banner-desc { font-size: 12px; color: var(--danger-text); opacity: 0.85; line-height: 1.5; }
+.banner-title.info { color: var(--info-text); }
+.steps-list { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.steps-list li { font-size: 13px; display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; padding: 6px 10px; border-radius: var(--radius-sm); }
+.steps-list li.danger { color: var(--danger-text); background: rgba(254,226,226,0.5); }
+.steps-list li.warning { color: var(--warning-text); background: rgba(254,243,199,0.5); }
+.steps-list li.info { color: var(--info-text); background: rgba(219,234,254,0.5); }
+.steps-list li::before { content: "→"; font-weight: 700; flex-shrink: 0; }
+.banner-desc { font-size: 11px; margin-top: 2px; opacity: 0.75; }
+.banner-desc.danger { color: var(--danger-text); }
 .banner-desc.warning { color: var(--warning-text); }
-.action-steps { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 2px; }
-.action-steps li { font-size: 13px; color: var(--danger-text); display: flex; align-items: flex-start; gap: 7px; line-height: 1.5; }
-.action-steps li.warning { color: var(--warning-text); }
-.action-steps li::before { content: "→"; font-weight: 700; flex-shrink: 0; }
 .actions-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 4px; border-top: 0.5px solid var(--border); }
 .spinner-dark { width: 15px; height: 15px; border: 2px solid var(--border-strong); border-top-color: var(--text); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-row { display: flex; align-items: center; gap: 10px; padding: 0.5rem 0; }
 .hidden { display: none !important; }
-.divider { height: 0.5px; background: var(--border); margin: 2px 0; }
+.sop-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--info-bg); border: 0.5px solid var(--info-border); border-radius: 20px; padding: 2px 10px; font-size: 11px; color: var(--info-text); margin-right: 4px; margin-bottom: 4px; }
 </style>
 </head>
 <body>
@@ -68,20 +68,12 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
     <div class="logo">EC</div>
     <div>
       <div class="title">PM Assistant</div>
-      <div class="subtitle">Edit Crew · Claude + ClickUp SOPs</div>
+      <div class="subtitle">Edit Crew · Claude + SOP Bible</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="label">Contexto del ticket</div>
-    <div class="meta-row">
-      <input type="text" id="client-name" placeholder="Nombre del cliente" />
-      <select id="pm-select">
-        <option value="">PM asignado...</option>
-        <option>Abril</option><option>Carolina</option><option>Verónica</option>
-        <option>Azul</option><option>Ana Karen</option><option>Andrés</option><option>Mitshell</option>
-      </select>
-    </div>
+    <div class="label">Mensaje del cliente</div>
     <textarea id="ticket-input" placeholder="Pega aquí el mensaje del cliente..."></textarea>
     <div style="display: flex; justify-content: flex-end;">
       <button class="btn-primary" id="analyze-btn" onclick="analyzeTicket()">✦ Analizar y sugerir respuesta</button>
@@ -96,11 +88,17 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
   </div>
 
   <div class="hidden" id="result-section" style="display:flex; flex-direction:column; gap:10px;">
+
+    <!-- Status + action steps -->
     <div class="hidden" id="status-banner"></div>
+
+    <!-- SOPs referenced -->
+    <div class="hidden" id="sop-banner"></div>
+
+    <!-- Suggested response -->
     <div class="card hidden" id="response-card" style="gap:14px;">
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
         <div class="label">Respuesta sugerida</div>
-        <div class="source-tag">📄 <span id="source-name"></span></div>
       </div>
       <div class="response-text" id="response-text"></div>
       <div class="actions-row">
@@ -108,47 +106,36 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
         <button class="btn-ghost" onclick="resetPanel()">↺ Nuevo ticket</button>
       </div>
     </div>
-    <div style="display:flex; justify-content:flex-end;" id="reset-row" class="hidden">
-      <button class="btn-ghost" onclick="resetPanel()">↺ Nuevo ticket</button>
-    </div>
+
   </div>
 
 </div>
 <script>
-const DOCS = [
-  { title: "Solicitudes fuera de paquete", keys: ["extra","adicional","fuera","paquete","precio","más videos","agregar","no incluye","cobrar"], content: "Cuando un cliente solicita trabajo fuera de su paquete contratado, informar de forma empática que el servicio solicitado está fuera del alcance actual y ofrecer opciones de upgrade. No comprometer horas sin autorización del PM Lead." },
-  { title: "Revisiones y feedback", keys: ["revisión","cambio","ajuste","no me gusta","modificar","corrección","feedback","review"], content: "Cada paquete incluye revisiones limitadas. El cliente debe consolidar feedback en un solo mensaje. Si supera las revisiones incluidas, aplicar política de revisiones adicionales. Siempre validar con empatía antes de informar costo." },
-  { title: "Tiempos de entrega", keys: ["cuándo","entrega","tiempo","tarde","demora","urgente","deadline","plazo","fecha","retraso","date","delivery","when"], content: "Tiempos estándar: 3-5 días hábiles desde recepción de assets. Si hay demora del equipo, comunicar proactivamente con disculpa y nueva fecha. Si la demora es por falta de assets del cliente, recordarlo con tacto." },
-  { title: "Onboarding nuevo cliente", keys: ["comenzar","empezar","cómo funciona","primera vez","nuevo","inicio","onboarding"], content: "El PM debe agendar call de onboarding en las primeras 24h. Compartir One Sheet y guía de assets. Explicar flujo en ManyRequests y Frame.io. Presentar al editor asignado." },
-  { title: "Cancelación y pausa", keys: ["cancelar","pausar","detener","ya no","terminar","dar de baja","suspender","cancel"], content: "Ante solicitud de cancelación: escuchar y validar sin presionar. Notificar al PM Lead ANTES de confirmar nada. Ofrecer pausa temporal si aplica. No procesar cancelación sin verde del liderazgo." },
-  { title: "Quejas de calidad", keys: ["calidad","no quedó bien","horrible","mal editado","terrible","decepcionado","error","fallo","quality","disappointed"], content: "Validar la queja sin ponerse a la defensiva. Pedir ejemplos específicos. Comprometer revisión prioritaria. Si el error es del editor, escalar internamente primero. Nunca culpar al editor frente al cliente." },
-  { title: "Conflicto o insatisfacción general", keys: ["promised","said repeatedly","execution","communication","match","raising","directly","frustrated","unacceptable","disappointed","enough","done","serious"], content: "Cuando el cliente expresa insatisfacción profunda con la relación o el servicio en general, el PM Lead debe ser notificado antes de responder. Validar sin prometer ni justificar. No responder a la defensiva." }
+const LOADING = [
+  "Analizando el mensaje...",
+  "Consultando SOP Bible...",
+  "Evaluando nivel de riesgo...",
+  "Generando recomendación..."
 ];
 
 const HIGH_ESC = [
   "raising this with juliana","raising with juliana","escalating","cancel","refund","devolver","reembolso",
   "lawyer","abogado","legal","publicly","social media","redes sociales","contract","contrato",
   "done with","fed up","had enough","this is unacceptable","not what was promised","said repeatedly",
-  "directly","incompetent","terrible","worst","never again","going elsewhere"
+  "directly","incompetent","terrible","worst","never again","going elsewhere","i want out"
 ];
 
 const MED_ESC = [
   "frustrated","disappointed","waiting too long","no response","ignored","weeks","not good enough",
-  "expected more","promised","communication","execution","match what was promised"
+  "expected more","promised","communication","execution","match what was promised","very unhappy"
 ];
-
-const LOADING = ["Analizando el mensaje...","Evaluando nivel de riesgo...","Generando recomendación..."];
-
-function findDoc(t) {
-  t = t.toLowerCase();
-  return DOCS.reduce((b,d) => { const s=d.keys.filter(k=>t.includes(k)).length; return s>(b.s||0)?{...d,s}:b; }, DOCS[0]);
-}
 
 function getEscLevel(t) {
   t = t.toLowerCase();
   const highFlags = HIGH_ESC.filter(k => t.includes(k));
   const medFlags = MED_ESC.filter(k => t.includes(k));
   if (highFlags.length > 0) return { level: "high", flags: highFlags };
+  if (medFlags.length >= 2) return { level: "high", flags: medFlags };
   if (medFlags.length > 0) return { level: "medium", flags: medFlags };
   return { level: "low", flags: [] };
 }
@@ -158,102 +145,125 @@ let loadingTimer;
 async function analyzeTicket() {
   const ticket = document.getElementById('ticket-input').value.trim();
   if (!ticket) { alert('Pega el mensaje del cliente primero.'); return; }
-  const client = document.getElementById('client-name').value.trim() || 'el cliente';
-  const pm = document.getElementById('pm-select').value || 'el PM';
 
   document.getElementById('analyze-btn').disabled = true;
   document.getElementById('result-section').classList.add('hidden');
   document.getElementById('loading-card').classList.remove('hidden');
 
   let s = 0;
-  loadingTimer = setInterval(() => { s=(s+1)%LOADING.length; document.getElementById('loading-text').textContent=LOADING[s]; }, 1500);
+  loadingTimer = setInterval(() => {
+    s = (s+1) % LOADING.length;
+    document.getElementById('loading-text').textContent = LOADING[s];
+  }, 1400);
 
-  const doc = findDoc(ticket);
   const esc = getEscLevel(ticket);
 
-  const system = `Eres el asistente interno de Edit Crew, una agencia de edición de video premium. Ayudas a los Project Managers a redactar respuestas para sus clientes.
+  const system = `Eres el asistente interno de Edit Crew, una agencia de edición de video premium. Ayudas a los Project Managers a manejar tickets de clientes.
 
-SOP relevante:
-Proceso: "${doc.title}"
-Lineamientos: ${doc.content}
+Tu tarea es analizar el mensaje del cliente y devolver un JSON con esta estructura exacta (sin markdown, sin backticks, solo JSON puro):
 
-REGLAS CRÍTICAS:
-- Responde SIEMPRE en inglés
-- El PM que escribe es: ${pm} — la respuesta es en PRIMERA PERSONA (yo, I, me) nunca en tercera persona
-- Tono: empático, cálido, profesional — nunca frío ni corporativo
+{
+  "sops": ["nombre del SOP 1 relevante", "nombre del SOP 2 relevante"],
+  "checklist": ["paso concreto a revisar antes de responder 1", "paso 2", "paso 3"],
+  "response": "respuesta lista para enviar al cliente en inglés"
+}
+
+Reglas para "sops": nombres de procesos de una SOP Bible de agencia de video (revisiones, entregas, cancelaciones, calidad, comunicación, onboarding, escalación). Pon los más relevantes al mensaje.
+
+Reglas para "checklist": pasos MUY concretos que el PM debe verificar o hacer ANTES de responder. Basados en buenas prácticas de CS. Máximo 4 pasos. Ejemplos: "Revisa el historial de revisiones de este cliente en ClickUp", "Confirma con el editor el status actual del video", "Verifica cuántas revisiones le quedan según su paquete".
+
+Reglas para "response":
+- En inglés siempre
+- Primera persona (I, we) — nunca mencionar al PM en tercera persona  
+- Empático, cálido, profesional
 - Máximo 80 palabras
-- No prometas nada fuera del proceso
-- Firma: "The Edit Crew Team"
-- Escribe SOLO la respuesta lista para enviar, sin explicaciones ni preámbulos
-- Si el mensaje es de alto riesgo o conflicto serio, escribe una respuesta breve que solo valide al cliente y prometa seguimiento inmediato — nada más`;
+- Firma: The Edit Crew Team
+- Si es alto riesgo: solo validar y prometer seguimiento inmediato, nada más
+- Solo el texto del mensaje, sin explicaciones`;
 
   try {
     const res = await fetch("/api/claude", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", max_tokens: 400, system,
-        messages: [{ role: "user", content: `Mensaje del cliente:\n"${ticket}"\n\nSugiere la respuesta.` }]
+        model: "claude-sonnet-4-6",
+        max_tokens: 600,
+        system,
+        messages: [{ role: "user", content: `Mensaje del cliente:\n"${ticket}"` }]
       })
     });
+
     const data = await res.json();
     clearInterval(loadingTimer);
     document.getElementById('loading-card').classList.add('hidden');
 
-    if (data.error) { alert("Error: " + (data.error.message || JSON.stringify(data.error))); document.getElementById('analyze-btn').disabled=false; return; }
+    if (data.error) {
+      alert("Error: " + (data.error.message || JSON.stringify(data.error)));
+      document.getElementById('analyze-btn').disabled = false;
+      return;
+    }
 
-    const suggestion = data.content?.[0]?.text || "Sin respuesta.";
+    let parsed;
+    try {
+      const raw = data.content?.[0]?.text || "{}";
+      parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    } catch(e) {
+      parsed = { sops: [], checklist: [], response: data.content?.[0]?.text || "Sin respuesta." };
+    }
 
-    // Build status banner
+    // Status banner
     const sb = document.getElementById('status-banner');
-    const rc = document.getElementById('response-card');
-    const rr = document.getElementById('reset-row');
-
     if (esc.level === "high") {
       sb.className = 'banner banner-danger';
       sb.classList.remove('hidden');
+      const checklistHTML = (parsed.checklist || []).map(s => `<li class="danger">${s}</li>`).join('');
       sb.innerHTML = `
         <div class="banner-icon">🚨</div>
         <div class="banner-body">
-          <div class="banner-title danger">Escalar con tu PM Lead antes de responder</div>
-          <ul class="action-steps">
-            <li>Notifica a Juli directamente — no respondas sin su visto bueno</li>
-            <li>Si ya respondiste algo, comparte el hilo con Juli ahora</li>
-            <li>El mensaje de abajo es solo un placeholder de contención — revísalo antes de enviar</li>
-          </ul>
-          <div class="banner-desc" style="margin-top:4px;">Señales detectadas: ${esc.flags.join(', ')}</div>
+          <div class="banner-title danger">Escala con Juli antes de responder</div>
+          <ul class="steps-list">${checklistHTML}<li class="danger">Notifica a Juli directamente — no envíes nada sin su visto bueno</li></ul>
+          <div class="banner-desc danger">Señales detectadas: ${esc.flags.join(', ')}</div>
         </div>`;
-      document.getElementById('source-name').textContent = doc.title;
-      document.getElementById('response-text').textContent = suggestion;
-      rc.classList.remove('hidden');
-      rr.classList.add('hidden');
     } else if (esc.level === "medium") {
       sb.className = 'banner banner-warning';
       sb.classList.remove('hidden');
+      const checklistHTML = (parsed.checklist || []).map(s => `<li class="warning">${s}</li>`).join('');
       sb.innerHTML = `
         <div class="banner-icon">⚠️</div>
         <div class="banner-body">
-          <div class="banner-title warning">Revisar antes de enviar</div>
-          <ul class="action-steps">
-            <li class="warning">El cliente muestra señales de frustración — revisa el tono de tu respuesta</li>
-            <li class="warning">Si el tema no se resuelve rápido, loop in a Juli</li>
-          </ul>
-          <div class="banner-desc warning" style="margin-top:4px;">Señales: ${esc.flags.join(', ')}</div>
+          <div class="banner-title warning">Revisa estos puntos antes de enviar</div>
+          <ul class="steps-list">${checklistHTML}</ul>
+          <div class="banner-desc warning">Señales: ${esc.flags.join(', ')}</div>
         </div>`;
-      document.getElementById('source-name').textContent = doc.title;
-      document.getElementById('response-text').textContent = suggestion;
-      rc.classList.remove('hidden');
-      rr.classList.add('hidden');
     } else {
       sb.className = 'banner banner-success';
       sb.classList.remove('hidden');
-      sb.innerHTML = `<div class="banner-icon">✓</div><div class="banner-body"><div class="banner-title success">Sin señales de riesgo — listo para enviar</div></div>`;
-      document.getElementById('source-name').textContent = doc.title;
-      document.getElementById('response-text').textContent = suggestion;
-      rc.classList.remove('hidden');
-      rr.classList.add('hidden');
+      const checklistHTML = (parsed.checklist || []).map(s => `<li class="info">${s}</li>`).join('');
+      sb.innerHTML = `
+        <div class="banner-icon">✓</div>
+        <div class="banner-body">
+          <div class="banner-title success">Sin señales de riesgo</div>
+          ${parsed.checklist?.length ? `<ul class="steps-list">${checklistHTML}</ul>` : ''}
+        </div>`;
     }
 
+    // SOPs banner
+    if (parsed.sops && parsed.sops.length > 0) {
+      const sopBanner = document.getElementById('sop-banner');
+      sopBanner.className = 'banner banner-info';
+      sopBanner.classList.remove('hidden');
+      const chipsHTML = parsed.sops.map(s => `<span class="sop-chip">📄 ${s}</span>`).join('');
+      sopBanner.innerHTML = `
+        <div class="banner-icon">📚</div>
+        <div class="banner-body">
+          <div class="banner-title info">SOPs relevantes de tu Bible</div>
+          <div style="margin-top:6px;">${chipsHTML}</div>
+        </div>`;
+    }
+
+    // Response
+    document.getElementById('response-text').textContent = parsed.response || "";
+    document.getElementById('response-card').classList.remove('hidden');
     document.getElementById('result-section').classList.remove('hidden');
     document.getElementById('analyze-btn').disabled = false;
 
@@ -267,16 +277,17 @@ REGLAS CRÍTICAS:
 
 function copyResponse() {
   navigator.clipboard.writeText(document.getElementById('response-text').textContent).then(() => {
-    const b = document.getElementById('copy-btn'); b.textContent='✓ Copiado';
-    setTimeout(()=>{ b.textContent='Copiar respuesta'; }, 2000);
+    const b = document.getElementById('copy-btn');
+    b.textContent = '✓ Copiado';
+    setTimeout(() => { b.textContent = 'Copiar respuesta'; }, 2000);
   });
 }
+
 function resetPanel() {
-  document.getElementById('ticket-input').value='';
-  document.getElementById('client-name').value='';
-  document.getElementById('pm-select').value='';
+  document.getElementById('ticket-input').value = '';
   document.getElementById('result-section').classList.add('hidden');
   document.getElementById('status-banner').classList.add('hidden');
+  document.getElementById('sop-banner').classList.add('hidden');
   document.getElementById('response-card').classList.add('hidden');
 }
 </script>
