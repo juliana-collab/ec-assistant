@@ -30,7 +30,6 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-ghost { background: transparent; color: var(--text-muted); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px; cursor: pointer; font-family: inherit; }
 .btn-ghost:hover { background: var(--bg); }
-.source-tag { display: inline-flex; align-items: center; gap: 5px; background: var(--bg); border: 0.5px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 11px; color: var(--text-muted); }
 .response-text { font-size: 14px; color: var(--text); line-height: 1.75; white-space: pre-wrap; }
 .banner { border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; }
 .banner-danger { background: var(--danger-bg); border: 0.5px solid var(--danger-border); }
@@ -44,7 +43,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .banner-title.warning { color: var(--warning-text); }
 .banner-title.success { color: var(--success-text); }
 .banner-title.info { color: var(--info-text); }
-.steps-list { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.steps-list { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
 .steps-list li { font-size: 13px; display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; padding: 6px 10px; border-radius: var(--radius-sm); }
 .steps-list li.danger { color: var(--danger-text); background: rgba(254,226,226,0.5); }
 .steps-list li.warning { color: var(--warning-text); background: rgba(254,243,199,0.5); }
@@ -58,7 +57,9 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-row { display: flex; align-items: center; gap: 10px; padding: 0.5rem 0; }
 .hidden { display: none !important; }
-.sop-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--info-bg); border: 0.5px solid var(--info-border); border-radius: 20px; padding: 2px 10px; font-size: 11px; color: var(--info-text); margin-right: 4px; margin-bottom: 4px; }
+.sop-link { display: inline-flex; align-items: center; gap: 5px; background: var(--info-bg); border: 0.5px solid var(--info-border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--info-text); margin-right: 6px; margin-bottom: 6px; text-decoration: none; font-weight: 500; transition: opacity 0.15s; }
+.sop-link:hover { opacity: 0.75; }
+.sop-link::after { content: "↗"; font-size: 10px; opacity: 0.7; }
 </style>
 </head>
 <body>
@@ -88,25 +89,16 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
   </div>
 
   <div class="hidden" id="result-section" style="display:flex; flex-direction:column; gap:10px;">
-
-    <!-- Status + action steps -->
     <div class="hidden" id="status-banner"></div>
-
-    <!-- SOPs referenced -->
     <div class="hidden" id="sop-banner"></div>
-
-    <!-- Suggested response -->
     <div class="card hidden" id="response-card" style="gap:14px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-        <div class="label">Respuesta sugerida</div>
-      </div>
+      <div class="label">Respuesta sugerida</div>
       <div class="response-text" id="response-text"></div>
       <div class="actions-row">
         <button class="btn-primary" onclick="copyResponse()" id="copy-btn">Copiar respuesta</button>
         <button class="btn-ghost" onclick="resetPanel()">↺ Nuevo ticket</button>
       </div>
     </div>
-
   </div>
 
 </div>
@@ -118,11 +110,33 @@ const LOADING = [
   "Generando recomendación..."
 ];
 
+// SOP Bible links — add or update as needed
+const SOP_LINKS = {
+  "revisiones": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537",
+  "feedback": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537",
+  "entregas": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537",
+  "tiempos": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537",
+  "cancelaciones": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537",
+  "calidad": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537",
+  "comunicación": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537",
+  "onboarding": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537",
+  "escalación": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537",
+  "default": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537"
+};
+
+function getSopLink(name) {
+  const lower = name.toLowerCase();
+  for (const key of Object.keys(SOP_LINKS)) {
+    if (lower.includes(key)) return SOP_LINKS[key];
+  }
+  return SOP_LINKS["default"];
+}
+
 const HIGH_ESC = [
-  "raising this with juliana","raising with juliana","escalating","cancel","refund","devolver","reembolso",
+  "raising this with","escalating","cancel","refund","devolver","reembolso",
   "lawyer","abogado","legal","publicly","social media","redes sociales","contract","contrato",
   "done with","fed up","had enough","this is unacceptable","not what was promised","said repeatedly",
-  "directly","incompetent","terrible","worst","never again","going elsewhere","i want out"
+  "incompetent","terrible","worst","never again","going elsewhere","i want out"
 ];
 
 const MED_ESC = [
@@ -163,23 +177,23 @@ async function analyzeTicket() {
 Tu tarea es analizar el mensaje del cliente y devolver un JSON con esta estructura exacta (sin markdown, sin backticks, solo JSON puro):
 
 {
-  "sops": ["nombre del SOP 1 relevante", "nombre del SOP 2 relevante"],
+  "sops": ["nombre corto del SOP relevante 1", "nombre corto del SOP relevante 2"],
   "checklist": ["paso concreto a revisar antes de responder 1", "paso 2", "paso 3"],
   "response": "respuesta lista para enviar al cliente en inglés"
 }
 
-Reglas para "sops": nombres de procesos de una SOP Bible de agencia de video (revisiones, entregas, cancelaciones, calidad, comunicación, onboarding, escalación). Pon los más relevantes al mensaje.
+Reglas para "sops": nombres cortos y descriptivos de procesos de la SOP Bible de Edit Crew (ej: "Política de Revisiones", "Proceso de Entregas", "Manejo de Cancelaciones", "Escalación de Conflictos", "Comunicación con Clientes"). Máximo 3. Solo los más relevantes.
 
-Reglas para "checklist": pasos MUY concretos que el PM debe verificar o hacer ANTES de responder. Basados en buenas prácticas de CS. Máximo 4 pasos. Ejemplos: "Revisa el historial de revisiones de este cliente en ClickUp", "Confirma con el editor el status actual del video", "Verifica cuántas revisiones le quedan según su paquete".
+Reglas para "checklist": pasos MUY concretos que el PM debe verificar ANTES de responder. Máximo 4. Ejemplos reales: "Revisa el historial de revisiones del cliente en ClickUp", "Confirma con el editor el status actual del proyecto", "Verifica cuántas revisiones le quedan según su paquete", "Consulta con el PM Lead antes de comprometer fechas".
 
 Reglas para "response":
 - En inglés siempre
-- Primera persona (I, we) — nunca mencionar al PM en tercera persona  
-- Empático, cálido, profesional
+- Primera persona (I, we) — NUNCA mencionar al PM en tercera persona
+- Empático, cálido, profesional — nunca frío ni corporativo
 - Máximo 80 palabras
 - Firma: The Edit Crew Team
-- Si es alto riesgo: solo validar y prometer seguimiento inmediato, nada más
-- Solo el texto del mensaje, sin explicaciones`;
+- Si es conflicto serio: solo validar emocionalmente y prometer seguimiento inmediato — nada más
+- Solo el texto del mensaje listo para enviar, sin explicaciones adicionales`;
 
   try {
     const res = await fetch("/api/claude", {
@@ -211,53 +225,61 @@ Reglas para "response":
       parsed = { sops: [], checklist: [], response: data.content?.[0]?.text || "Sin respuesta." };
     }
 
-    // Status banner
+    // Status banner with checklist
     const sb = document.getElementById('status-banner');
+    const checklistItems = parsed.checklist || [];
+
     if (esc.level === "high") {
       sb.className = 'banner banner-danger';
       sb.classList.remove('hidden');
-      const checklistHTML = (parsed.checklist || []).map(s => `<li class="danger">${s}</li>`).join('');
+      const stepsHTML = [
+        ...checklistItems.map(s => `<li class="danger">${s}</li>`),
+        `<li class="danger">Contacta al PM Lead antes de enviar cualquier respuesta</li>`
+      ].join('');
       sb.innerHTML = `
         <div class="banner-icon">🚨</div>
         <div class="banner-body">
-          <div class="banner-title danger">Escala con Juli antes de responder</div>
-          <ul class="steps-list">${checklistHTML}<li class="danger">Notifica a Juli directamente — no envíes nada sin su visto bueno</li></ul>
+          <div class="banner-title danger">Riesgo alto — revisa estos pasos primero</div>
+          <ul class="steps-list">${stepsHTML}</ul>
           <div class="banner-desc danger">Señales detectadas: ${esc.flags.join(', ')}</div>
         </div>`;
     } else if (esc.level === "medium") {
       sb.className = 'banner banner-warning';
       sb.classList.remove('hidden');
-      const checklistHTML = (parsed.checklist || []).map(s => `<li class="warning">${s}</li>`).join('');
+      const stepsHTML = checklistItems.map(s => `<li class="warning">${s}</li>`).join('');
       sb.innerHTML = `
         <div class="banner-icon">⚠️</div>
         <div class="banner-body">
           <div class="banner-title warning">Revisa estos puntos antes de enviar</div>
-          <ul class="steps-list">${checklistHTML}</ul>
+          <ul class="steps-list">${stepsHTML}</ul>
           <div class="banner-desc warning">Señales: ${esc.flags.join(', ')}</div>
         </div>`;
     } else {
       sb.className = 'banner banner-success';
       sb.classList.remove('hidden');
-      const checklistHTML = (parsed.checklist || []).map(s => `<li class="info">${s}</li>`).join('');
+      const stepsHTML = checklistItems.map(s => `<li class="info">${s}</li>`).join('');
       sb.innerHTML = `
         <div class="banner-icon">✓</div>
         <div class="banner-body">
           <div class="banner-title success">Sin señales de riesgo</div>
-          ${parsed.checklist?.length ? `<ul class="steps-list">${checklistHTML}</ul>` : ''}
+          ${checklistItems.length ? `<ul class="steps-list">${stepsHTML}</ul>` : ''}
         </div>`;
     }
 
-    // SOPs banner
+    // SOPs with links
     if (parsed.sops && parsed.sops.length > 0) {
       const sopBanner = document.getElementById('sop-banner');
       sopBanner.className = 'banner banner-info';
       sopBanner.classList.remove('hidden');
-      const chipsHTML = parsed.sops.map(s => `<span class="sop-chip">📄 ${s}</span>`).join('');
+      const linksHTML = parsed.sops.map(name => {
+        const url = getSopLink(name);
+        return `<a class="sop-link" href="${url}" target="_blank">📄 ${name}</a>`;
+      }).join('');
       sopBanner.innerHTML = `
         <div class="banner-icon">📚</div>
         <div class="banner-body">
-          <div class="banner-title info">SOPs relevantes de tu Bible</div>
-          <div style="margin-top:6px;">${chipsHTML}</div>
+          <div class="banner-title info">SOPs relevantes — clic para abrir en ClickUp</div>
+          <div style="margin-top:8px; display:flex; flex-wrap:wrap;">${linksHTML}</div>
         </div>`;
     }
 
