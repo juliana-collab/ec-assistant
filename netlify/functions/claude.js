@@ -5,7 +5,7 @@ exports.handler = async function(event) {
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const clickupKey = process.env.CLICKUP_API_KEY;
-  const TEAM_ID = "10628585";
+  const LIST_ID = "88301430";
 
   try {
     const body = JSON.parse(event.body);
@@ -15,28 +15,36 @@ exports.handler = async function(event) {
       if (!clickupKey) return { statusCode: 500, body: JSON.stringify({ error: "ClickUp API key not configured" }) };
 
       const acronym = body.acronym.toUpperCase();
+      let allTasks = [];
+      let page = 0;
+      let hasMore = true;
 
-      // Use ClickUp search endpoint directly
-      const searchRes = await fetch(`https://api.clickup.com/api/v2/team/${TEAM_ID}/task?page=0&order_by=updated&reverse=true&subtasks=false&include_closed=true&search_query=${encodeURIComponent(acronym)}`, {
-        headers: { "Authorization": clickupKey, "Content-Type": "application/json" }
-      });
+      // Paginate through all tasks in the list
+      while (hasMore && page < 5) {
+        const res = await fetch(`https://api.clickup.com/api/v2/list/${LIST_ID}/task?page=${page}&archived=false&include_closed=true&subtasks=false`, {
+          headers: { "Authorization": clickupKey }
+        });
+        const data = await res.json();
 
-      const searchData = await searchRes.json();
+        if (!res.ok) {
+          return {
+            statusCode: res.status,
+            body: JSON.stringify({ error: data.err || "ClickUp error", detail: data })
+          };
+        }
 
-      if (!searchRes.ok) {
-        return {
-          statusCode: searchRes.status,
-          body: JSON.stringify({ error: searchData.err || searchData.error || "ClickUp error", detail: searchData })
-        };
+        const tasks = data.tasks || [];
+        if (tasks.length === 0) { hasMore = false; break; }
+
+        const filtered = tasks.filter(t => t.name.toUpperCase().startsWith(acronym));
+        allTasks = allTasks.concat(filtered);
+        page++;
+
+        if (tasks.length < 100) hasMore = false;
       }
 
-      // Filter tasks that start with the acronym
-      const tasks = (searchData.tasks || []).filter(t =>
-        t.name.toUpperCase().startsWith(acronym)
-      );
-
       // Get time tracked for each task
-      const tasksWithTime = await Promise.all(tasks.slice(0, 20).map(async task => {
+      const tasksWithTime = await Promise.all(allTasks.slice(0, 20).map(async task => {
         try {
           const timeRes = await fetch(`https://api.clickup.com/api/v2/task/${task.id}/time`, {
             headers: { "Authorization": clickupKey }
@@ -51,7 +59,7 @@ exports.handler = async function(event) {
             hours: totalHours,
             assignees: (task.assignees || []).map(a => a.username || a.email).join(", ") || "—",
             due_date: task.due_date ? new Date(parseInt(task.due_date)).toLocaleDateString('en-US') : "—",
-            url: `https://app.clickup.com/t/${TEAM_ID}/${task.id}`
+            url: task.url || `https://app.clickup.com/t/${task.id}`
           };
         } catch {
           return {
@@ -61,7 +69,7 @@ exports.handler = async function(event) {
             hours: "—",
             assignees: (task.assignees || []).map(a => a.username || a.email).join(", ") || "—",
             due_date: task.due_date ? new Date(parseInt(task.due_date)).toLocaleDateString('en-US') : "—",
-            url: `https://app.clickup.com/t/${TEAM_ID}/${task.id}`
+            url: task.url || `https://app.clickup.com/t/${task.id}`
           };
         }
       }));
