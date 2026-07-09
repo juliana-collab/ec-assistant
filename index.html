@@ -16,16 +16,29 @@
   --radius: 10px; --radius-sm: 6px;
 }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem; }
-.container { width: 100%; max-width: 680px; display: flex; flex-direction: column; gap: 1rem; }
+.container { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 1rem; }
 .header { display: flex; align-items: center; gap: 12px; padding: 0 0 0.5rem; }
 .logo { width: 38px; height: 38px; border-radius: 10px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; color: #fff; }
 .title { font-size: 16px; font-weight: 600; }
 .subtitle { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 4px; }
+.tab { flex: 1; padding: 8px 12px; font-size: 13px; font-weight: 500; border: none; border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; transition: all 0.15s; text-align: center; }
+.tab.active { background: var(--accent); color: #fff; }
+.tab:not(.active):hover { background: var(--bg); color: var(--text); }
+
+.tab-panel { display: none; flex-direction: column; gap: 1rem; }
+.tab-panel.active { display: flex; }
+
 .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; display: flex; flex-direction: column; gap: 12px; }
 .label { font-size: 11px; font-weight: 600; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.07em; }
 textarea { width: 100%; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; color: var(--text); background: var(--bg); resize: vertical; min-height: 120px; font-family: inherit; line-height: 1.6; }
 textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-.btn-primary { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font-family: inherit; transition: opacity 0.15s; }
+.input-row { display: flex; gap: 8px; }
+.input-row input { flex: 1; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 14px; color: var(--text); background: var(--bg); font-family: inherit; text-transform: uppercase; }
+.input-row input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.btn-primary { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font-family: inherit; transition: opacity 0.15s; white-space: nowrap; }
 .btn-primary:hover { opacity: 0.85; }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-ghost { background: transparent; color: var(--text-muted); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px; cursor: pointer; font-family: inherit; }
@@ -59,7 +72,19 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .hidden { display: none !important; }
 .sop-link { display: inline-flex; align-items: center; gap: 5px; background: var(--info-bg); border: 0.5px solid var(--info-border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--info-text); margin-right: 6px; margin-bottom: 6px; text-decoration: none; font-weight: 500; transition: opacity 0.15s; }
 .sop-link:hover { opacity: 0.75; }
-.sop-link::after { content: "↗"; font-size: 10px; opacity: 0.7; }
+.sop-link::after { content: " ↗"; font-size: 10px; opacity: 0.7; }
+
+/* Tasks table */
+.tasks-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tasks-table th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 10px; border-bottom: 0.5px solid var(--border); }
+.tasks-table td { padding: 10px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); vertical-align: top; }
+.tasks-table tr:last-child td { border-bottom: none; }
+.tasks-table tr:hover td { background: var(--bg); }
+.task-link { color: var(--info-text); text-decoration: none; font-weight: 500; }
+.task-link:hover { text-decoration: underline; }
+.status-pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; background: var(--bg); border: 0.5px solid var(--border-strong); color: var(--text-muted); text-transform: capitalize; }
+.hours-badge { font-weight: 600; color: var(--accent); }
+.empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 13px; }
 </style>
 </head>
 <body>
@@ -69,48 +94,86 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
     <div class="logo">EC</div>
     <div>
       <div class="title">PM Assistant</div>
-      <div class="subtitle">Edit Crew · Claude + SOP Bible</div>
+      <div class="subtitle">Edit Crew · Claude + SOP Bible + ClickUp</div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="label">Mensaje del cliente</div>
-    <textarea id="ticket-input" placeholder="Pega aquí el mensaje del cliente..."></textarea>
-    <div style="display: flex; justify-content: flex-end;">
-      <button class="btn-primary" id="analyze-btn" onclick="analyzeTicket()">✦ Analizar y sugerir respuesta</button>
-    </div>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('ticket')">💬 Responder ticket</button>
+    <button class="tab" onclick="switchTab('clickup')">🔍 Consultar ClickUp</button>
   </div>
 
-  <div class="card hidden" id="loading-card">
-    <div class="loading-row">
-      <div class="spinner-dark"></div>
-      <span style="font-size:13px; color: var(--text-muted);" id="loading-text">Analizando el mensaje...</span>
-    </div>
-  </div>
-
-  <div class="hidden" id="result-section" style="display:flex; flex-direction:column; gap:10px;">
-    <div class="hidden" id="status-banner"></div>
-    <div class="hidden" id="sop-banner"></div>
-    <div class="card hidden" id="response-card" style="gap:14px;">
-      <div class="label">Respuesta sugerida</div>
-      <div class="response-text" id="response-text"></div>
-      <div class="actions-row">
-        <button class="btn-primary" onclick="copyResponse()" id="copy-btn">Copiar respuesta</button>
-        <button class="btn-ghost" onclick="resetPanel()">↺ Nuevo ticket</button>
+  <!-- TAB 1: Ticket -->
+  <div class="tab-panel active" id="panel-ticket">
+    <div class="card">
+      <div class="label">Mensaje del cliente</div>
+      <textarea id="ticket-input" placeholder="Pega aquí el mensaje del cliente..."></textarea>
+      <div style="display: flex; justify-content: flex-end;">
+        <button class="btn-primary" id="analyze-btn" onclick="analyzeTicket()">✦ Analizar y sugerir respuesta</button>
       </div>
+    </div>
+
+    <div class="card hidden" id="loading-card">
+      <div class="loading-row">
+        <div class="spinner-dark"></div>
+        <span style="font-size:13px; color: var(--text-muted);" id="loading-text">Analizando el mensaje...</span>
+      </div>
+    </div>
+
+    <div class="hidden" id="result-section" style="display:flex; flex-direction:column; gap:10px;">
+      <div class="hidden" id="status-banner"></div>
+      <div class="hidden" id="sop-banner"></div>
+      <div class="card hidden" id="response-card" style="gap:14px;">
+        <div class="label">Respuesta sugerida</div>
+        <div class="response-text" id="response-text"></div>
+        <div class="actions-row">
+          <button class="btn-primary" onclick="copyResponse()" id="copy-btn">Copiar respuesta</button>
+          <button class="btn-ghost" onclick="resetTicket()">↺ Nuevo ticket</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: ClickUp -->
+  <div class="tab-panel" id="panel-clickup">
+    <div class="card">
+      <div class="label">Buscar cliente por acrónimo</div>
+      <div class="input-row">
+        <input type="text" id="acronym-input" placeholder="Ej: TOCS, WPR, KH..." maxlength="10" />
+        <button class="btn-primary" id="search-btn" onclick="searchTasks()">🔍 Buscar en ClickUp</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="cu-loading-card">
+      <div class="loading-row">
+        <div class="spinner-dark"></div>
+        <span style="font-size:13px; color: var(--text-muted);" id="cu-loading-text">Buscando tareas en ClickUp...</span>
+      </div>
+    </div>
+
+    <div class="card hidden" id="tasks-card">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <div class="label" id="tasks-title">Tareas encontradas</div>
+        <div style="font-size:12px; color:var(--text-muted);" id="tasks-count"></div>
+      </div>
+      <div id="tasks-container"></div>
     </div>
   </div>
 
 </div>
 <script>
-const LOADING = [
-  "Analizando el mensaje...",
-  "Consultando SOP Bible...",
-  "Evaluando nivel de riesgo...",
-  "Generando recomendación..."
-];
+// --- Tab switching ---
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (i === 0 && tab === 'ticket') || (i === 1 && tab === 'clickup')));
+  document.getElementById('panel-ticket').classList.toggle('active', tab === 'ticket');
+  document.getElementById('panel-clickup').classList.toggle('active', tab === 'clickup');
+}
 
-// SOP Bible links — add or update as needed
+// --- Ticket analysis ---
+const LOADING = ["Analizando el mensaje...","Consultando SOP Bible...","Evaluando nivel de riesgo...","Generando recomendación..."];
+const CU_LOADING = ["Buscando tareas en ClickUp...","Consultando horas trackeadas...","Organizando resultados..."];
+
 const SOP_LINKS = {
   "revisiones": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537",
   "feedback": "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-3537",
@@ -126,31 +189,20 @@ const SOP_LINKS = {
 
 function getSopLink(name) {
   const lower = name.toLowerCase();
-  for (const key of Object.keys(SOP_LINKS)) {
-    if (lower.includes(key)) return SOP_LINKS[key];
-  }
+  for (const key of Object.keys(SOP_LINKS)) { if (lower.includes(key)) return SOP_LINKS[key]; }
   return SOP_LINKS["default"];
 }
 
-const HIGH_ESC = [
-  "raising this with","escalating","cancel","refund","devolver","reembolso",
-  "lawyer","abogado","legal","publicly","social media","redes sociales","contract","contrato",
-  "done with","fed up","had enough","this is unacceptable","not what was promised","said repeatedly",
-  "incompetent","terrible","worst","never again","going elsewhere","i want out"
-];
-
-const MED_ESC = [
-  "frustrated","disappointed","waiting too long","no response","ignored","weeks","not good enough",
-  "expected more","promised","communication","execution","match what was promised","very unhappy"
-];
+const HIGH_ESC = ["raising this with","escalating","cancel","refund","devolver","reembolso","lawyer","abogado","legal","publicly","social media","redes sociales","contract","contrato","done with","fed up","had enough","this is unacceptable","not what was promised","said repeatedly","incompetent","terrible","worst","never again","going elsewhere","i want out"];
+const MED_ESC = ["frustrated","disappointed","waiting too long","no response","ignored","weeks","not good enough","expected more","promised","communication","execution","match what was promised","very unhappy"];
 
 function getEscLevel(t) {
   t = t.toLowerCase();
-  const highFlags = HIGH_ESC.filter(k => t.includes(k));
-  const medFlags = MED_ESC.filter(k => t.includes(k));
-  if (highFlags.length > 0) return { level: "high", flags: highFlags };
-  if (medFlags.length >= 2) return { level: "high", flags: medFlags };
-  if (medFlags.length > 0) return { level: "medium", flags: medFlags };
+  const hf = HIGH_ESC.filter(k => t.includes(k));
+  const mf = MED_ESC.filter(k => t.includes(k));
+  if (hf.length > 0) return { level: "high", flags: hf };
+  if (mf.length >= 2) return { level: "high", flags: mf };
+  if (mf.length > 0) return { level: "medium", flags: mf };
   return { level: "low", flags: [] };
 }
 
@@ -165,125 +217,63 @@ async function analyzeTicket() {
   document.getElementById('loading-card').classList.remove('hidden');
 
   let s = 0;
-  loadingTimer = setInterval(() => {
-    s = (s+1) % LOADING.length;
-    document.getElementById('loading-text').textContent = LOADING[s];
-  }, 1400);
+  loadingTimer = setInterval(() => { s=(s+1)%LOADING.length; document.getElementById('loading-text').textContent=LOADING[s]; }, 1400);
 
   const esc = getEscLevel(ticket);
 
   const system = `Eres el asistente interno de Edit Crew, una agencia de edición de video premium. Ayudas a los Project Managers a manejar tickets de clientes.
 
-Tu tarea es analizar el mensaje del cliente y devolver un JSON con esta estructura exacta (sin markdown, sin backticks, solo JSON puro):
-
+Devuelve un JSON con esta estructura exacta (sin markdown, sin backticks, solo JSON puro):
 {
   "sops": ["nombre corto del SOP relevante 1", "nombre corto del SOP relevante 2"],
   "checklist": ["paso concreto a revisar antes de responder 1", "paso 2", "paso 3"],
   "response": "respuesta lista para enviar al cliente en inglés"
 }
 
-Reglas para "sops": nombres cortos y descriptivos de procesos de la SOP Bible de Edit Crew (ej: "Política de Revisiones", "Proceso de Entregas", "Manejo de Cancelaciones", "Escalación de Conflictos", "Comunicación con Clientes"). Máximo 3. Solo los más relevantes.
-
-Reglas para "checklist": pasos MUY concretos que el PM debe verificar ANTES de responder. Máximo 4. Ejemplos reales: "Revisa el historial de revisiones del cliente en ClickUp", "Confirma con el editor el status actual del proyecto", "Verifica cuántas revisiones le quedan según su paquete", "Consulta con el PM Lead antes de comprometer fechas".
-
-Reglas para "response":
-- En inglés siempre
-- Primera persona (I, we) — NUNCA mencionar al PM en tercera persona
-- Empático, cálido, profesional — nunca frío ni corporativo
-- Máximo 80 palabras
-- Firma: The Edit Crew Team
-- Si es conflicto serio: solo validar emocionalmente y prometer seguimiento inmediato — nada más
-- Solo el texto del mensaje listo para enviar, sin explicaciones adicionales`;
+"sops": nombres cortos de procesos de la SOP Bible (ej: "Política de Revisiones", "Proceso de Entregas", "Manejo de Cancelaciones", "Escalación de Conflictos"). Máximo 3.
+"checklist": pasos MUY concretos que el PM debe verificar ANTES de responder. Máximo 4. Ejemplos: "Revisa el historial de revisiones del cliente en ClickUp", "Confirma con el editor el status actual del proyecto", "Verifica cuántas revisiones le quedan según su paquete".
+"response": en inglés, primera persona (I/we), empático y cálido, máximo 80 palabras, firma "The Edit Crew Team". Si es conflicto serio: solo validar y prometer seguimiento. Solo el texto listo para enviar.`;
 
   try {
     const res = await fetch("/api/claude", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 600,
-        system,
-        messages: [{ role: "user", content: `Mensaje del cliente:\n"${ticket}"` }]
-      })
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 600, system, messages: [{ role: "user", content: `Mensaje del cliente:\n"${ticket}"` }] })
     });
-
     const data = await res.json();
     clearInterval(loadingTimer);
     document.getElementById('loading-card').classList.add('hidden');
 
-    if (data.error) {
-      alert("Error: " + (data.error.message || JSON.stringify(data.error)));
-      document.getElementById('analyze-btn').disabled = false;
-      return;
-    }
+    if (data.error) { alert("Error: " + (data.error.message || JSON.stringify(data.error))); document.getElementById('analyze-btn').disabled=false; return; }
 
     let parsed;
-    try {
-      const raw = data.content?.[0]?.text || "{}";
-      parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
-    } catch(e) {
-      parsed = { sops: [], checklist: [], response: data.content?.[0]?.text || "Sin respuesta." };
-    }
+    try { parsed = JSON.parse((data.content?.[0]?.text || "{}").replace(/```json|```/g,"").trim()); }
+    catch(e) { parsed = { sops: [], checklist: [], response: data.content?.[0]?.text || "Sin respuesta." }; }
 
-    // Status banner with checklist
     const sb = document.getElementById('status-banner');
-    const checklistItems = parsed.checklist || [];
+    const items = parsed.checklist || [];
 
     if (esc.level === "high") {
-      sb.className = 'banner banner-danger';
-      sb.classList.remove('hidden');
-      const stepsHTML = [
-        ...checklistItems.map(s => `<li class="danger">${s}</li>`),
-        `<li class="danger">Contacta al PM Lead antes de enviar cualquier respuesta</li>`
-      ].join('');
-      sb.innerHTML = `
-        <div class="banner-icon">🚨</div>
-        <div class="banner-body">
-          <div class="banner-title danger">Riesgo alto — revisa estos pasos primero</div>
-          <ul class="steps-list">${stepsHTML}</ul>
-          <div class="banner-desc danger">Señales detectadas: ${esc.flags.join(', ')}</div>
-        </div>`;
+      sb.className = 'banner banner-danger'; sb.classList.remove('hidden');
+      const steps = [...items.map(s=>`<li class="danger">${s}</li>`), `<li class="danger">Contacta al PM Lead antes de enviar cualquier respuesta</li>`].join('');
+      sb.innerHTML = `<div class="banner-icon">🚨</div><div class="banner-body"><div class="banner-title danger">Riesgo alto — revisa estos pasos primero</div><ul class="steps-list">${steps}</ul><div class="banner-desc danger">Señales: ${esc.flags.join(', ')}</div></div>`;
     } else if (esc.level === "medium") {
-      sb.className = 'banner banner-warning';
-      sb.classList.remove('hidden');
-      const stepsHTML = checklistItems.map(s => `<li class="warning">${s}</li>`).join('');
-      sb.innerHTML = `
-        <div class="banner-icon">⚠️</div>
-        <div class="banner-body">
-          <div class="banner-title warning">Revisa estos puntos antes de enviar</div>
-          <ul class="steps-list">${stepsHTML}</ul>
-          <div class="banner-desc warning">Señales: ${esc.flags.join(', ')}</div>
-        </div>`;
+      sb.className = 'banner banner-warning'; sb.classList.remove('hidden');
+      const steps = items.map(s=>`<li class="warning">${s}</li>`).join('');
+      sb.innerHTML = `<div class="banner-icon">⚠️</div><div class="banner-body"><div class="banner-title warning">Revisa estos puntos antes de enviar</div><ul class="steps-list">${steps}</ul><div class="banner-desc warning">Señales: ${esc.flags.join(', ')}</div></div>`;
     } else {
-      sb.className = 'banner banner-success';
-      sb.classList.remove('hidden');
-      const stepsHTML = checklistItems.map(s => `<li class="info">${s}</li>`).join('');
-      sb.innerHTML = `
-        <div class="banner-icon">✓</div>
-        <div class="banner-body">
-          <div class="banner-title success">Sin señales de riesgo</div>
-          ${checklistItems.length ? `<ul class="steps-list">${stepsHTML}</ul>` : ''}
-        </div>`;
+      sb.className = 'banner banner-success'; sb.classList.remove('hidden');
+      const steps = items.map(s=>`<li class="info">${s}</li>`).join('');
+      sb.innerHTML = `<div class="banner-icon">✓</div><div class="banner-body"><div class="banner-title success">Sin señales de riesgo</div>${items.length?`<ul class="steps-list">${steps}</ul>`:''}</div>`;
     }
 
-    // SOPs with links
-    if (parsed.sops && parsed.sops.length > 0) {
-      const sopBanner = document.getElementById('sop-banner');
-      sopBanner.className = 'banner banner-info';
-      sopBanner.classList.remove('hidden');
-      const linksHTML = parsed.sops.map(name => {
-        const url = getSopLink(name);
-        return `<a class="sop-link" href="${url}" target="_blank">📄 ${name}</a>`;
-      }).join('');
-      sopBanner.innerHTML = `
-        <div class="banner-icon">📚</div>
-        <div class="banner-body">
-          <div class="banner-title info">SOPs relevantes — clic para abrir en ClickUp</div>
-          <div style="margin-top:8px; display:flex; flex-wrap:wrap;">${linksHTML}</div>
-        </div>`;
+    if (parsed.sops?.length) {
+      const sopB = document.getElementById('sop-banner');
+      sopB.className = 'banner banner-info'; sopB.classList.remove('hidden');
+      const chips = parsed.sops.map(n=>`<a class="sop-link" href="${getSopLink(n)}" target="_blank">📄 ${n}</a>`).join('');
+      sopB.innerHTML = `<div class="banner-icon">📚</div><div class="banner-body"><div class="banner-title info">SOPs relevantes — clic para abrir en ClickUp</div><div style="margin-top:8px;display:flex;flex-wrap:wrap;">${chips}</div></div>`;
     }
 
-    // Response
     document.getElementById('response-text').textContent = parsed.response || "";
     document.getElementById('response-card').classList.remove('hidden');
     document.getElementById('result-section').classList.remove('hidden');
@@ -299,19 +289,84 @@ Reglas para "response":
 
 function copyResponse() {
   navigator.clipboard.writeText(document.getElementById('response-text').textContent).then(() => {
-    const b = document.getElementById('copy-btn');
-    b.textContent = '✓ Copiado';
-    setTimeout(() => { b.textContent = 'Copiar respuesta'; }, 2000);
+    const b = document.getElementById('copy-btn'); b.textContent='✓ Copiado';
+    setTimeout(()=>{ b.textContent='Copiar respuesta'; }, 2000);
   });
 }
 
-function resetPanel() {
-  document.getElementById('ticket-input').value = '';
+function resetTicket() {
+  document.getElementById('ticket-input').value='';
   document.getElementById('result-section').classList.add('hidden');
   document.getElementById('status-banner').classList.add('hidden');
   document.getElementById('sop-banner').classList.add('hidden');
   document.getElementById('response-card').classList.add('hidden');
 }
+
+// --- ClickUp search ---
+let cuTimer;
+
+async function searchTasks() {
+  const acronym = document.getElementById('acronym-input').value.trim().toUpperCase();
+  if (!acronym) { alert('Escribe el acrónimo del cliente.'); return; }
+
+  document.getElementById('search-btn').disabled = true;
+  document.getElementById('tasks-card').classList.add('hidden');
+  document.getElementById('cu-loading-card').classList.remove('hidden');
+
+  let s = 0;
+  cuTimer = setInterval(() => { s=(s+1)%CU_LOADING.length; document.getElementById('cu-loading-text').textContent=CU_LOADING[s]; }, 1500);
+
+  try {
+    const res = await fetch("/api/claude", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "search_tasks", acronym })
+    });
+    const data = await res.json();
+    clearInterval(cuTimer);
+    document.getElementById('cu-loading-card').classList.add('hidden');
+
+    if (data.error) { alert("Error ClickUp: " + data.error); document.getElementById('search-btn').disabled=false; return; }
+
+    const tasks = data.tasks || [];
+    document.getElementById('tasks-title').textContent = `Tareas de ${acronym}`;
+    document.getElementById('tasks-count').textContent = `${tasks.length} tarea${tasks.length !== 1 ? 's' : ''} encontrada${tasks.length !== 1 ? 's' : ''}`;
+
+    if (tasks.length === 0) {
+      document.getElementById('tasks-container').innerHTML = `<div class="empty-state">No se encontraron tareas con el acrónimo <strong>${acronym}</strong></div>`;
+    } else {
+      const totalHours = tasks.reduce((sum, t) => sum + (parseFloat(t.hours) || 0), 0).toFixed(1);
+      const rows = tasks.map(t => `
+        <tr>
+          <td><a class="task-link" href="${t.url}" target="_blank">${t.name}</a></td>
+          <td><span class="status-pill">${t.status}</span></td>
+          <td class="hours-badge">${t.hours}h</td>
+          <td style="color:var(--text-muted); font-size:12px;">${t.assignees}</td>
+          <td style="color:var(--text-muted); font-size:12px;">${t.due_date}</td>
+        </tr>`).join('');
+
+      document.getElementById('tasks-container').innerHTML = `
+        <div style="background:var(--info-bg); border:0.5px solid var(--info-border); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:12px; font-size:13px; color:var(--info-text);">
+          <strong>Total horas trackeadas:</strong> ${totalHours}h en ${tasks.length} tarea${tasks.length!==1?'s':''}
+        </div>
+        <table class="tasks-table">
+          <thead><tr><th>Tarea</th><th>Status</th><th>Horas</th><th>Asignado</th><th>Fecha límite</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    document.getElementById('tasks-card').classList.remove('hidden');
+    document.getElementById('search-btn').disabled = false;
+
+  } catch(e) {
+    clearInterval(cuTimer);
+    document.getElementById('cu-loading-card').classList.add('hidden');
+    alert("Error de conexión: " + e.message);
+    document.getElementById('search-btn').disabled = false;
+  }
+}
+
+document.getElementById('acronym-input').addEventListener('keydown', e => { if (e.key === 'Enter') searchTasks(); });
 </script>
 </body>
 </html>
