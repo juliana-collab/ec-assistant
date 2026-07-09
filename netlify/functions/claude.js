@@ -5,7 +5,7 @@ exports.handler = async function(event) {
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const clickupKey = process.env.CLICKUP_API_KEY;
-  const WORKSPACE_ID = "10628585";
+  const TEAM_ID = "10628585";
 
   try {
     const body = JSON.parse(event.body);
@@ -16,58 +16,42 @@ exports.handler = async function(event) {
 
       const acronym = body.acronym.toUpperCase();
 
-      // First get all spaces to find "Edit Crew"
-      const spacesRes = await fetch(`https://api.clickup.com/api/v2/team/${WORKSPACE_ID}/space?archived=false`, {
-        headers: { "Authorization": clickupKey }
+      // Use ClickUp search endpoint directly
+      const searchRes = await fetch(`https://api.clickup.com/api/v2/team/${TEAM_ID}/task?page=0&order_by=updated&reverse=true&subtasks=false&include_closed=true&search_query=${encodeURIComponent(acronym)}`, {
+        headers: { "Authorization": clickupKey, "Content-Type": "application/json" }
       });
-      const spacesData = await spacesRes.json();
-      const editCrewSpace = spacesData.spaces?.find(s => s.name.toLowerCase().includes("edit crew"));
 
-      if (!editCrewSpace) return { statusCode: 404, body: JSON.stringify({ error: "Space 'Edit Crew' not found" }) };
+      const searchData = await searchRes.json();
 
-      // Get folders in space
-      const foldersRes = await fetch(`https://api.clickup.com/api/v2/space/${editCrewSpace.id}/folder?archived=false`, {
-        headers: { "Authorization": clickupKey }
-      });
-      const foldersData = await foldersRes.json();
-      const projectsFolder = foldersData.folders?.find(f => f.name.toLowerCase().includes("edit crew projects"));
-
-      if (!projectsFolder) return { statusCode: 404, body: JSON.stringify({ error: "Folder 'Edit Crew Projects' not found" }) };
-
-      // Get lists in folder
-      const listsRes = await fetch(`https://api.clickup.com/api/v2/folder/${projectsFolder.id}/list?archived=false`, {
-        headers: { "Authorization": clickupKey }
-      });
-      const listsData = await listsRes.json();
-
-      // Search tasks across all lists filtering by acronym
-      let allTasks = [];
-      for (const list of (listsData.lists || []).slice(0, 10)) {
-        const tasksRes = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task?archived=false&include_closed=true&subtasks=false`, {
-          headers: { "Authorization": clickupKey }
-        });
-        const tasksData = await tasksRes.json();
-        const filtered = (tasksData.tasks || []).filter(t => t.name.toUpperCase().startsWith(acronym));
-        allTasks = allTasks.concat(filtered);
+      if (!searchRes.ok) {
+        return {
+          statusCode: searchRes.status,
+          body: JSON.stringify({ error: searchData.err || searchData.error || "ClickUp error", detail: searchData })
+        };
       }
 
+      // Filter tasks that start with the acronym
+      const tasks = (searchData.tasks || []).filter(t =>
+        t.name.toUpperCase().startsWith(acronym)
+      );
+
       // Get time tracked for each task
-      const tasksWithTime = await Promise.all(allTasks.slice(0, 20).map(async task => {
+      const tasksWithTime = await Promise.all(tasks.slice(0, 20).map(async task => {
         try {
           const timeRes = await fetch(`https://api.clickup.com/api/v2/task/${task.id}/time`, {
             headers: { "Authorization": clickupKey }
           });
           const timeData = await timeRes.json();
-          const totalMs = (timeData.data || []).reduce((sum, entry) => sum + (entry.duration || 0), 0);
+          const totalMs = (timeData.data || []).reduce((sum, e) => sum + (parseInt(e.duration) || 0), 0);
           const totalHours = (totalMs / 3600000).toFixed(1);
           return {
             id: task.id,
             name: task.name,
             status: task.status?.status || "unknown",
             hours: totalHours,
-            assignees: task.assignees?.map(a => a.username).join(", ") || "—",
+            assignees: (task.assignees || []).map(a => a.username || a.email).join(", ") || "—",
             due_date: task.due_date ? new Date(parseInt(task.due_date)).toLocaleDateString('en-US') : "—",
-            url: task.url
+            url: `https://app.clickup.com/t/${TEAM_ID}/${task.id}`
           };
         } catch {
           return {
@@ -75,9 +59,9 @@ exports.handler = async function(event) {
             name: task.name,
             status: task.status?.status || "unknown",
             hours: "—",
-            assignees: task.assignees?.map(a => a.username).join(", ") || "—",
+            assignees: (task.assignees || []).map(a => a.username || a.email).join(", ") || "—",
             due_date: task.due_date ? new Date(parseInt(task.due_date)).toLocaleDateString('en-US') : "—",
-            url: task.url
+            url: `https://app.clickup.com/t/${TEAM_ID}/${task.id}`
           };
         }
       }));
