@@ -10,49 +10,35 @@ exports.handler = async function(event) {
   try {
     const body = JSON.parse(event.body);
 
-    // --- CLICKUP CHAT: Natural language query ---
     if (body.action === "clickup_chat") {
       if (!clickupKey) return { statusCode: 500, body: JSON.stringify({ error: "ClickUp API key not configured" }) };
 
       const question = body.question;
 
-      // Step 1: Ask Claude what acronym and filters to extract from the question
+      // Step 1: Extract acronym and period from question
       const extractRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": anthropicKey, "anthropic-version": "2023-06-01" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 200,
-          system: `Extract search parameters from a question about ClickUp tasks. Return ONLY a JSON object like:
-{"acronym": "TOCS", "period": "week", "status": null, "task_name": null}
-
-period options: "today", "week", "month", "all" (default "all")
-status: exact status name if mentioned, otherwise null
-task_name: specific task name/number if mentioned, otherwise null
-acronym: the client acronym in uppercase, required`,
+          model: "claude-sonnet-4-6", max_tokens: 200,
+          system: `Extract search parameters from a question about ClickUp tasks. Return ONLY valid JSON:
+{"acronym": "TOCS", "period": "week"}
+period options: "today", "week", "month", "all"`,
           messages: [{ role: "user", content: question }]
         })
       });
       const extractData = await extractRes.json();
       let params;
-      try {
-        params = JSON.parse(extractData.content[0].text.replace(/```json|```/g, "").trim());
-      } catch {
-        return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
-          body: JSON.stringify({ answer: "No pude identificar el cliente en tu pregunta. ¿Puedes incluir el acrónimo? Ejemplo: *¿Cuántas horas tiene TOCS esta semana?*" }) };
-      }
+      try { params = JSON.parse(extractData.content[0].text.replace(/```json|```/g,"").trim()); }
+      catch { return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" }, body: JSON.stringify({ answer: "No pude identificar el cliente. Incluye el acrónimo, ej: *¿Cuántas horas tiene TOCS esta semana?*" }) }; }
 
-      if (!params.acronym) {
-        return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
-          body: JSON.stringify({ answer: "No encontré un acrónimo de cliente en tu pregunta. Intenta algo como: *¿Cuántas horas lleva WPR este mes?*" }) };
-      }
+      const acronym = (params.acronym || "").toUpperCase();
+      if (!acronym) return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" }, body: JSON.stringify({ answer: "No encontré un acrónimo de cliente. Intenta: *¿Cuántas horas lleva WPR este mes?*" }) };
 
-      // Step 2: Fetch tasks from ClickUp filtered by acronym
-      const acronym = params.acronym.toUpperCase();
+      // Step 2: Fetch tasks
       let allTasks = [];
       let page = 0;
       let hasMore = true;
-
       while (hasMore && page < 20) {
         const res = await fetch(
           `https://api.clickup.com/api/v2/list/${LIST_ID}/task?page=${page}&archived=false&include_closed=true&subtasks=false&search_query=${encodeURIComponent(acronym)}`,
@@ -67,69 +53,82 @@ acronym: the client acronym in uppercase, required`,
         if (tasks.length < 100) hasMore = false;
       }
 
-      // Step 3: Get time entries with date filtering
+      if (allTasks.length === 0) {
+        return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
+          body: JSON.stringify({ answer: `No encontré tareas para el cliente **${acronym}** en ClickUp. Verifica que el acrónimo sea correcto.` }) };
+      }
+
+      // Step 3: Get time using /v2/team time entries endpoint (more reliable)
       const now = Date.now();
-      const periodMs = {
-        today: 24 * 60 * 60 * 1000,
-        week: 7 * 24 * 60 * 60 * 1000,
-        month: 30 * 24 * 60 * 60 * 1000,
-        all: null
-      };
+      const periodMs = { today: 86400000, week: 604800000, month: 2592000000, all: null };
       const cutoff = periodMs[params.period] ? now - periodMs[params.period] : null;
 
-      const tasksWithData = await Promise.all(allTasks.slice(0, 50).map(async task => {
+      // Try getting time entries per task
+      const tasksWithData = await Promise.all(allTasks.slice(0, 30).map(async task => {
         try {
-          const timeRes = await fetch(`https://api.clickup.com/api/v2/task/${task.id}/time`, {
-            headers: { "Authorization": clickupKey }
-          });
+          // Use the time entries endpoint with date filter if applicable
+          let timeUrl = `https://api.clickup.com/api/v2/task/${task.id}/time`;
+          if (cutoff) timeUrl += `?start_date=${cutoff}&end_date=${now}`;
+
+          const timeRes = await fetch(timeUrl, { headers: { "Authorization": clickupKey } });
           const timeData = await timeRes.json();
           const entries = timeData.data || [];
-          const filteredEntries = cutoff
-            ? entries.filter(e => parseInt(e.start) >= cutoff)
-            : entries;
-          const totalMs = filteredEntries.reduce((sum, e) => sum + (parseInt(e.duration) || 0), 0);
+          const totalMs = entries.reduce((sum, e) => sum + (parseInt(e.duration) || 0), 0);
+
           return {
             name: task.name,
             status: task.status?.status || "unknown",
-            hours: (totalMs / 3600000).toFixed(2),
+            hours: parseFloat((totalMs / 3600000).toFixed(2)),
             assignees: (task.assignees || []).map(a => a.username || a.email).join(", ") || "—",
             due_date: task.due_date ? new Date(parseInt(task.due_date)).toLocaleDateString('en-US') : "—",
-            url: task.url || `https://app.clickup.com/t/${task.id}`
+            url: task.url || `https://app.clickup.com/t/${task.id}`,
+            entries_count: entries.length
           };
-        } catch {
-          return { name: task.name, status: task.status?.status || "unknown", hours: "0.00", assignees: "—", due_date: "—", url: "" };
+        } catch(e) {
+          return { name: task.name, status: task.status?.status||"unknown", hours: 0, assignees:"—", due_date:"—", url:"", entries_count: 0 };
         }
       }));
 
-      // Step 4: Ask Claude to answer the question with real data
-      const dataContext = JSON.stringify(tasksWithData, null, 2);
+      const totalHours = tasksWithData.reduce((sum, t) => sum + t.hours, 0).toFixed(2);
+      const tasksWithHours = tasksWithData.filter(t => t.hours > 0);
+      const periodLabel = { today: "hoy", week: "esta semana", month: "este mes", all: "en total" }[params.period] || "en total";
+
+      // Step 4: Claude answers with real data
       const answerRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": anthropicKey, "anthropic-version": "2023-06-01" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 400,
-          system: `Eres el asistente de operaciones de Edit Crew, una agencia de edición de video. Tienes acceso a datos reales de ClickUp.
-Responde en español, de forma clara y directa. Usa números concretos. Si hay tareas relevantes, menciona sus nombres.
-Período consultado: ${params.period === 'week' ? 'esta semana' : params.period === 'month' ? 'este mes' : params.period === 'today' ? 'hoy' : 'total histórico'}.
-Formato: respuesta concisa en 2-4 líneas máximo. Puedes usar negritas con **texto**.`,
-          messages: [{
-            role: "user",
-            content: `Pregunta del PM: "${question}"\n\nDatos de ClickUp para el cliente ${acronym}:\n${dataContext}\n\nResponde la pregunta con estos datos reales.`
-          }]
+          model: "claude-sonnet-4-6", max_tokens: 400,
+          system: `Eres el asistente de operaciones de Edit Crew. Responde en español, directo y claro. Usa negritas con **texto**. Máximo 3-4 líneas.`,
+          messages: [{ role: "user", content: `Pregunta: "${question}"
+
+Datos reales de ClickUp para ${acronym} (${periodLabel}):
+- Total tareas encontradas: ${allTasks.length}
+- Tareas con horas registradas: ${tasksWithHours.length}
+- Total horas ${periodLabel}: ${totalHours}h
+- Detalle por tarea: ${JSON.stringify(tasksWithData.slice(0, 10))}
+
+Responde la pregunta con estos datos.` }]
         })
       });
-
       const answerData = await answerRes.json();
-      const answer = answerData.content?.[0]?.text || "No pude generar una respuesta.";
-
-      // Include relevant task links if few results
-      const relevantTasks = tasksWithData.filter(t => parseFloat(t.hours) > 0).slice(0, 5);
+      const answer = answerData.content?.[0]?.text || "No pude generar respuesta.";
 
       return {
         statusCode: 200,
         headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
-        body: JSON.stringify({ answer, tasks: relevantTasks, acronym, period: params.period })
+        body: JSON.stringify({
+          answer,
+          tasks: tasksWithHours.slice(0, 5),
+          debug: {
+            total_tasks_found: allTasks.length,
+            tasks_with_hours: tasksWithHours.length,
+            total_hours: totalHours,
+            period: params.period,
+            cutoff_used: cutoff ? new Date(cutoff).toISOString() : "none",
+            sample_entries: tasksWithData.slice(0, 3).map(t => ({ name: t.name, hours: t.hours, entries: t.entries_count }))
+          }
+        })
       };
     }
 
@@ -140,11 +139,7 @@ Formato: respuesta concisa en 2-4 líneas máximo. Puedes usar negritas con **te
       body: JSON.stringify(body)
     });
     const data = await response.json();
-    return {
-      statusCode: 200,
-      headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    };
+    return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" }, body: JSON.stringify(data) };
 
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
