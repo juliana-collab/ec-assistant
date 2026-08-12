@@ -6,6 +6,7 @@ exports.handler = async function(event) {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const clickupKey = process.env.CLICKUP_API_KEY;
   const LIST_ID = "88301430";
+  const TEAM_ID = "10628585";
 
   try {
     const body = JSON.parse(event.body);
@@ -15,7 +16,7 @@ exports.handler = async function(event) {
 
       const question = body.question;
 
-      // Step 1: Extract acronym and period from question
+      // Step 1: Extract acronym and period
       const extractRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": anthropicKey, "anthropic-version": "2023-06-01" },
@@ -33,9 +34,16 @@ period options: "today", "week", "month", "all"`,
       catch { return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" }, body: JSON.stringify({ answer: "No pude identificar el cliente. Incluye el acrónimo, ej: *¿Cuántas horas tiene TOCS esta semana?*" }) }; }
 
       const acronym = (params.acronym || "").toUpperCase();
-      if (!acronym) return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" }, body: JSON.stringify({ answer: "No encontré un acrónimo de cliente. Intenta: *¿Cuántas horas lleva WPR este mes?*" }) };
+      if (!acronym) return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" }, body: JSON.stringify({ answer: "No encontré un acrónimo. Intenta: *¿Cuántas horas lleva WPR este mes?*" }) };
 
-      // Step 2: Fetch tasks
+      // Step 2: Calculate date range
+      const now = Date.now();
+      const periodMs = { today: 86400000, week: 604800000, month: 2592000000, all: null };
+      const cutoff = periodMs[params.period] ? now - periodMs[params.period] : null;
+      const startDate = cutoff || (now - 365 * 86400000); // default: last year
+      const periodLabel = { today: "hoy", week: "esta semana", month: "este mes", all: "en total" }[params.period] || "en total";
+
+      // Step 3: Fetch tasks to get task IDs
       let allTasks = [];
       let page = 0;
       let hasMore = true;
@@ -55,45 +63,42 @@ period options: "today", "week", "month", "all"`,
 
       if (allTasks.length === 0) {
         return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
-          body: JSON.stringify({ answer: `No encontré tareas para el cliente **${acronym}** en ClickUp. Verifica que el acrónimo sea correcto.` }) };
+          body: JSON.stringify({ answer: `No encontré tareas para **${acronym}** en ClickUp. Verifica el acrónimo.` }) };
       }
 
-      // Step 3: Get time using /v2/team time entries endpoint (more reliable)
-      const now = Date.now();
-      const periodMs = { today: 86400000, week: 604800000, month: 2592000000, all: null };
-      const cutoff = periodMs[params.period] ? now - periodMs[params.period] : null;
+      // Step 4: Get time entries from team endpoint filtered by date
+      // This is the correct endpoint that supports date filtering
+      const timeRes = await fetch(
+        `https://api.clickup.com/api/v2/team/${TEAM_ID}/time_entries?start_date=${startDate}&end_date=${now}`,
+        { headers: { "Authorization": clickupKey } }
+      );
+      const timeData = await timeRes.json();
+      const allEntries = timeData.data || [];
 
-      // Try getting time entries per task
-      const tasksWithData = await Promise.all(allTasks.slice(0, 30).map(async task => {
-        try {
-          // Use the time entries endpoint with date filter if applicable
-          let timeUrl = `https://api.clickup.com/api/v2/task/${task.id}/time`;
-          if (cutoff) timeUrl += `?start_date=${cutoff}&end_date=${now}`;
+      // Build a set of task IDs from our client
+      const taskIdSet = new Set(allTasks.map(t => t.id));
+      const taskNameMap = {};
+      allTasks.forEach(t => { taskNameMap[t.id] = { name: t.name, status: t.status?.status || "unknown", url: t.url || `https://app.clickup.com/t/${t.id}` }; });
 
-          const timeRes = await fetch(timeUrl, { headers: { "Authorization": clickupKey } });
-          const timeData = await timeRes.json();
-          const entries = timeData.data || [];
-          const totalMs = entries.reduce((sum, e) => sum + (parseInt(e.duration) || 0), 0);
+      // Filter entries that belong to this client's tasks
+      const clientEntries = allEntries.filter(e => e.task?.id && taskIdSet.has(e.task.id));
 
-          return {
-            name: task.name,
-            status: task.status?.status || "unknown",
-            hours: parseFloat((totalMs / 3600000).toFixed(2)),
-            assignees: (task.assignees || []).map(a => a.username || a.email).join(", ") || "—",
-            due_date: task.due_date ? new Date(parseInt(task.due_date)).toLocaleDateString('en-US') : "—",
-            url: task.url || `https://app.clickup.com/t/${task.id}`,
-            entries_count: entries.length
-          };
-        } catch(e) {
-          return { name: task.name, status: task.status?.status||"unknown", hours: 0, assignees:"—", due_date:"—", url:"", entries_count: 0 };
-        }
-      }));
+      // Aggregate hours by task
+      const taskHours = {};
+      clientEntries.forEach(e => {
+        const tid = e.task.id;
+        if (!taskHours[tid]) taskHours[tid] = { hours: 0, name: taskNameMap[tid]?.name || e.task.name, status: taskNameMap[tid]?.status || "unknown", url: taskNameMap[tid]?.url || "" };
+        taskHours[tid].hours += (parseInt(e.duration) || 0) / 3600000;
+      });
 
-      const totalHours = tasksWithData.reduce((sum, t) => sum + t.hours, 0).toFixed(2);
-      const tasksWithHours = tasksWithData.filter(t => t.hours > 0);
-      const periodLabel = { today: "hoy", week: "esta semana", month: "este mes", all: "en total" }[params.period] || "en total";
+      const tasksWithHours = Object.values(taskHours)
+        .filter(t => t.hours > 0)
+        .sort((a, b) => b.hours - a.hours)
+        .map(t => ({ ...t, hours: parseFloat(t.hours.toFixed(2)) }));
 
-      // Step 4: Claude answers with real data
+      const totalHours = tasksWithHours.reduce((sum, t) => sum + t.hours, 0).toFixed(2);
+
+      // Step 5: Claude answers
       const answerRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": anthropicKey, "anthropic-version": "2023-06-01" },
@@ -103,12 +108,12 @@ period options: "today", "week", "month", "all"`,
           messages: [{ role: "user", content: `Pregunta: "${question}"
 
 Datos reales de ClickUp para ${acronym} (${periodLabel}):
-- Total tareas encontradas: ${allTasks.length}
-- Tareas con horas registradas: ${tasksWithHours.length}
-- Total horas ${periodLabel}: ${totalHours}h
-- Detalle por tarea: ${JSON.stringify(tasksWithData.slice(0, 10))}
+- Total tareas del cliente: ${allTasks.length}
+- Total horas registradas ${periodLabel}: ${totalHours}h
+- Tareas con horas: ${tasksWithHours.length}
+- Top tareas por horas: ${JSON.stringify(tasksWithHours.slice(0, 5))}
 
-Responde la pregunta con estos datos.` }]
+Responde la pregunta con estos datos reales.` }]
         })
       });
       const answerData = await answerRes.json();
@@ -121,12 +126,13 @@ Responde la pregunta con estos datos.` }]
           answer,
           tasks: tasksWithHours.slice(0, 5),
           debug: {
-            total_tasks_found: allTasks.length,
+            total_tasks: allTasks.length,
+            total_time_entries: allEntries.length,
+            client_entries: clientEntries.length,
             tasks_with_hours: tasksWithHours.length,
             total_hours: totalHours,
             period: params.period,
-            cutoff_used: cutoff ? new Date(cutoff).toISOString() : "none",
-            sample_entries: tasksWithData.slice(0, 3).map(t => ({ name: t.name, hours: t.hours, entries: t.entries_count }))
+            start_date: new Date(startDate).toISOString()
           }
         })
       };
