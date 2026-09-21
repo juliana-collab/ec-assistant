@@ -133,7 +133,8 @@ const SOPS = [
   { name: "Contingency Plan with Clients", keys: ["contingency","contingencia","cancel","cancelar","churn","baja","losing client","unhappy","insatisfecho","escalat","at risk"], url: "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-6917" },
   { name: "Client Messages & Templates", keys: ["message template","plantilla","template","canned response","respuesta predefinida","how to respond","how to reply","qué responder"], url: "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-4077" },
   { name: "Client Onboardings", keys: ["onboard","onboarding","new client","nuevo cliente","welcome","bienvenida","first week","primera semana","one sheet"], url: "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-6957" },
-  { name: "Scope of Work", keys: ["scope","alcance","what is included","what's included","qué incluye","paquete","package","plan","subscription"], url: "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-8837" },
+  { name: "Scope of Work", keys: ["scope of work","scope","alcance","what is included","what's included","qué incluye","paquete","package","plan","subscription"], url: "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-8837" },
+  { name: "One Sheets", keys: ["one sheet","onesheet"], url: "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-4357" },
   { name: "SOPs for Account Management", keys: ["sop","process doc","procedimiento","standard operating","proceso estándar"], url: "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-7577" },
   { name: "Transitioning an Account to Another PM", keys: ["transition","handoff","transfer","cambio de pm","new pm","pm change","traspaso"], url: "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-4297" },
   { name: "How to Handle Editors", keys: ["editor","handle editor","editor issue","editor problem","editor wiki","editor performance"], url: "https://app.clickup.com/10628585/docs/a4bf9-5097/a4bf9-4197" },
@@ -144,10 +145,16 @@ const SOPS = [
 
 function getSops(text) {
   const lower = text.toLowerCase();
-  const matched = SOPS.filter(s => s.keys.some(k => lower.includes(k)));
+  // Score each SOP: exact name match gets priority
+  const scored = SOPS.map(s => {
+    let score = 0;
+    if (lower.includes(s.name.toLowerCase())) score += 10;
+    s.keys.forEach(k => { if (lower.includes(k)) score += (k.split(' ').length); }); // longer key = more specific = higher score
+    return { ...s, score };
+  }).filter(s => s.score > 0).sort((a, b) => b.score - a.score);
   // Deduplicate by url, keep max 3
   const seen = new Set();
-  return matched.filter(s => { if (seen.has(s.url)) return false; seen.add(s.url); return true; }).slice(0, 3);
+  return scored.filter(s => { if (seen.has(s.url)) return false; seen.add(s.url); return true; }).slice(0, 3);
 }
 
 // ─── Escalation detection ──────────────────────────────────────────────
