@@ -361,10 +361,13 @@ TÉRMINOS Y CONDICIONES DE EDIT CREW (aplica siempre):
 
 DETECCIÓN DE TIPO DE MENSAJE:
 - Si el mensaje parece ser de un CLIENTE (en inglés, tono de cliente, pidiendo algo): devuelve JSON estructurado así (sin markdown, sin backticks):
-{"type":"ticket","checklist":["paso 1","paso 2","paso 3"],"response":"respuesta lista en inglés, primera persona, máximo 90 palabras, firma The Edit Crew Team"}
+{"type":"ticket","sops":["How to Handle Clients","Contingency Plan with Clients"],"checklist":["paso 1","paso 2","paso 3"],"response":"respuesta lista en inglés, primera persona, máximo 90 palabras, firma The Edit Crew Team"}
 
 - Si es una PREGUNTA DEL PM (en español, consultando sobre procesos, cómo manejar algo, etc.): devuelve JSON así:
-{"type":"question","answer":"respuesta en español, directa y práctica, 2-4 párrafos máximo"}
+{"type":"question","sops":["SOP for Account Management","Client Onboardings"],"answer":"respuesta en español, directa y práctica, 2-4 párrafos máximo"}
+
+SOPs disponibles en la Bible (usa los nombres exactos):
+"How to Handle Clients", "SOP for Account Management", "Client Portal (ManyRequests)", "Contingency Plan with Clients", "Client Messages & Templates", "Client Onboardings", "Scope of Work", "SOPs for Account Management", "Transitioning an Account to Another PM", "How to Handle Editors", "POI for PMs", "Sheets and Forms", "Suite Studios Wiki"
 
 En ambos casos: nunca prometas cosas que van contra los T&C. En respuestas a clientes: empático pero firme y objetivo.`;
 
@@ -411,16 +414,32 @@ async function sendMessage() {
 
     if (parsed.type === "ticket") {
       const esc = getEsc(text);
-      const sopMatches = getSops(text + " " + (parsed.response || "") + " " + (parsed.checklist || []).join(" "));
-      const html = buildTicketHTML(parsed, esc, sopMatches);
+      // Match SOPs from Claude's named sops + full text
+      const fullText = text + " " + (parsed.response || "") + " " + (parsed.checklist || []).join(" ") + " " + (parsed.sops || []).join(" ");
+      const sopMatches = getSops(fullText);
+      // Also match by Claude's explicit sop names
+      if (parsed.sops && parsed.sops.length) {
+        parsed.sops.forEach(name => {
+          const found = SOPS.find(s => s.name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(s.name.toLowerCase().split(" ").slice(0,3).join(" ")));
+          if (found && !sopMatches.find(m => m.url === found.url)) sopMatches.push(found);
+        });
+      }
+      const html = buildTicketHTML(parsed, esc, sopMatches.slice(0,3));
       addBotMessage(html || "Sin respuesta generada.");
     } else {
-      // Conversational answer — format nicely
+      // For questions, also try to surface relevant SOPs
+      const sopMatches = getSops(text + " " + (parsed.answer || ""));
+      let html = '';
       const answer = (parsed.answer || raw)
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\n\n/g, '</p><p style="margin-top:8px;">')
         .replace(/\n/g, '<br>');
-      addBotMessage(`<p>${answer}</p>`);
+      html += `<p>${answer}</p>`;
+      if (sopMatches.length) {
+        const chips = sopMatches.map(s=>`<a class="sop-chip" href="${s.url}" target="_blank">📄 ${s.name}</a>`).join('');
+        html += `<div class="sop-chips" style="margin-top:10px;">${chips}</div>`;
+      }
+      addBotMessage(html);
     }
 
   } catch(e) {
